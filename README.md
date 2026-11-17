@@ -1,5 +1,4 @@
 # Room-light-heat-map
-# Room Light Heat Map
 
 An interactive, single-file web tool that visualises how well a room is lit, then recommends priced fixes to add or remove light, with the exact spot for each one.
 

@@ -368,20 +368,69 @@ Rules:
 - To change the goal or the open-floor level call set_goal or set_open_floor_level.
 - Every option is standalone: it is measured against the current room on its own, never combined with another.
 - If the user brings their own idea (a product, a brightness, a price, a placement such as "next to my desk" or a coordinate, or a bulb swap), call add_custom_idea with their details so it appears as its own option, then compare it with the closest listed options and preview it. Use the user's price; omit costUSD if none was given. Use remove_custom_idea if they change their mind.
-- Pick at most 3 options from the list, honour any budget, and prefer options with no warns. Then call preview_option for your top pick.
+- Read PARSED REQUEST first. If intent is "item", the user asked about one specific thing: answer about that option only (matchedOptionIds), with where it goes, its price and its effect, and preview it. Do not list alternatives; at most one sentence naming a clearly better option. If no option matches, say why and offer the closest one.
+- If intent is "goal", pick at most 3 options from the list, honour any budget, and prefer options with no warns. Then call preview_option for your top pick.
 - If nothing fits, say so and suggest the closest alternative.
 - Photo-mode positions are approximate.
-- Reply in under 170 words, friendly and plain. For each pick give the name, price, where it goes and why. Add one line with the combined cost of your picks, noting any overlap. Finish by saying which option is previewed on the map and that the user can press Apply on its card.`;
-function local(q){const t=q.toLowerCase(),m=t.match(/[0-9]{2,4}/),bud=m?+m[0]:1e9,less=/(less|dim|dark|glare|too bright|harsh|soft|reduce|cut)/.test(t);
-if((less?'less':'more')!==S.goal){S.goal=less?'less':'more';$('gMore').className=S.goal==='more'?'on':'';$('gLess').className=S.goal==='less'?'on':'';refresh()}
-const kinds=[['bed','bed'],['sofa','sofa'],['couch','sofa'],['chair','reading chair'],['read','reading chair'],['desk','desk'],['work','desk'],['table','table'],['tv','tv'],['screen','tv']],want=kinds.filter(k=>t.includes(k[0])).map(k=>k[1]);
-let l=S.opts.filter(x=>x.cost<=bud&&x.gain>0);const sc=x=>(x.fix.some(z=>want.some(w=>z.toLowerCase().includes(w)))?20:0)+x.gain-x.warn.length*10-x.cost/25;l.sort((a,b)=>sc(b)-sc(a));l=l.slice(0,3);
-if(!l.length)return 'Nothing in the current list fits'+(m?' under $'+bud:'')+'. Try a higher budget, or add furniture and lights above.';
-const tot=l.reduce((s,x)=>s+x.cost,0);S.pv=-1;pick(S.opts.indexOf(l[0]));
-return 'Best matches for “'+esc(q)+'”'+(m?' (budget $'+bud+')':'')+':<br><br>'+l.map((x,i)=>`<b>${i+1}. ${x.name}</b> — ${x.cost?'≈ $'+x.cost:'Free'} <small>(typical ${x.range})</small><br>${x.added.map(a=>a.name+': '+where(a.x,a.y)).join('<br>')}${x.fix.length?'<br>Fixes: '+x.fix.join(', '):''}${x.warn.length?'<br>Watch: '+x.warn.join(', '):''}<br>Right level: ${x.st.ok}% (${x.gain>=0?'+':''}${x.gain} pts)`).join('<br><br>')+`<br><br><b>All together: ≈ $${tot}</b> <small>(they overlap, so the first one or two may be enough)</small><br>Option 1 is previewed on the map. Press Apply on its card to keep it.`}
+- Reply in under 170 words, friendly and plain. For each pick give the name, price, where it goes and why. When you give several picks, add one line with the combined cost, noting any overlap. Finish by saying which option is previewed on the map and that the user can press Apply on its card.`;
+/* ---- advisor: parse the request into a structured intent, then answer from the simulated options ---- */
+const ITEMS=[
+ {k:"recessed",label:"pot lights",re:/\b(pot ?lights?|potlights?|recessed|can lights?|downlights?)\b/,opt:/recessed/i,goal:"more"},
+ {k:"track",label:"track lighting",re:/\btrack\b/,opt:/^Track lighting/,goal:"more"},
+ {k:"torchiere",label:"a torchiere uplight",re:/\b(torchi[eè]re|uplights?)\b/,opt:/^Torchiere/,goal:"more"},
+ {k:"floor",label:"a floor lamp",re:/\b(floor|standing|arc) lamps?\b/,opt:/^Floor lamp/,goal:"more"},
+ {k:"table",label:"a table lamp",re:/\b(table|desk|bedside) lamps?\b/,opt:/^Table lamp/,goal:"more"},
+ {k:"sconce",label:"a wall sconce",re:/\b(sconces?|wall lights?|wall lamps?)\b/,opt:/sconce/i,goal:"more"},
+ {k:"spot",label:"a spotlight",re:/\b(spot ?lights?|clip[- ]on)\b/,opt:/^Clip-on spotlight/,goal:"more"},
+ {k:"strip",label:"an LED strip",re:/\b(led strips?|strip lights?|strip lighting|light strips?|led tape)\b/,opt:/^LED strip/,goal:"more"},
+ {k:"mirror",label:"a mirror",re:/\bmirrors?\b/,opt:/^Mirror/,goal:"more"},
+ {k:"paint",label:"lighter paint",re:/\b(paint|repaint)\b/,opt:/^Repaint/,goal:"more"},
+ {k:"dimmer",label:"a dimmer",re:/\bdimmer (switch|switches)\b|\bdimmers\b|\badd a dimmer\b|\bdimmer\b(?! bulbs?)/,opt:/^Dimmer|^Plug-in lamp dimmers/,goal:"less"},
+ {k:"blackout",label:"blackout blinds",re:/\b(blackout|blinds?)\b/,opt:/^Blackout|^Curtains or blinds/,goal:"less"},
+ {k:"curtains",label:"sheer curtains",re:/\b(sheers?|curtains?)\b/,opt:/^Sheer curtains|^Curtains or blinds/,goal:"less"},
+ {k:"film",label:"window film",re:/\b(window film|window tint|tint)\b/,opt:/^Window film/,goal:"less"},
+ {k:"shades",label:"lamp shades",re:/\b(lamp ?shades?|diffusers?)\b/,opt:/^Lamp shades/,goal:"less"},
+ {k:"smartbulb",label:"smart bulbs",re:/\bsmart (led )?bulbs?\b/,opt:/^Smart (bulbs|dimmable)/,goal:null},
+ {k:"bulb",label:"new bulbs",re:/\bbulbs?\b/,opt:/^(Brighter LED bulbs|Lower-brightness bulbs)$/,goal:null}];
+const LESS=/\b(less light|too bright|glare|glary|harsh|softer|soften|reduce|cut (the )?(light|glare)|tone (it )?down|darker|cosier|cozier|calmer|blinding)\b/;
+const MORE=/\b(more light|brighter|brighten|too dark|too dim|dim|dark|gloomy|can't see|lighten|light up)\b/;
+const ZONES=[["bed","Bed"],["sofa","Sofa"],["couch","Sofa"],["reading","Reading chair"],["chair","Reading chair"],["desk","Desk"],["office","Desk"],["table","Table"],["nightstand","Side table"],["tv","TV"],["screen","TV"]];
+function parseIntent(q){const t=" "+q.toLowerCase().replace(/[’‘]/g,"'")+" ";
+ const bm=t.match(/(?:under|below|less than|max(?:imum)?|up to|budget(?: of| is)?|within)\s*\$?\s*(\d[\d,]*)(?!\s*(?:lm|lumens?|k\b|ft|feet|%|,\d))/)||t.match(/\$\s*(\d[\d,]*)/)||t.match(/(\d[\d,]*)\s*(?:dollars|bucks|usd)\b/);
+ const budget=bm?+bm[1].replace(/,/g,""):null;
+ const asksCost=/\b(cost|price|how much|expensive|cheap)/.test(t),asksWhere=/\b(where|place|put|position|go)\b/.test(t);
+ const item=ITEMS.find(i=>i.re.test(t))||null;
+ let goal=LESS.test(t)?"less":MORE.test(t)?"more":null;
+ if(item&&item.goal&&!goal)goal=item.goal;
+ if(item&&item.k==="bulb"&&/\b(softer|dimmer|warmer|lower)\b/.test(t))goal="less";
+ const zones=[...new Set(ZONES.filter(z=>new RegExp("\\b"+z[0]).test(t)).map(z=>z[1]))];
+ return{intent:item?"item":"goal",item:item?item.k:null,goal,budget,zones,asksCost,asksWhere}}
+const money=x=>x.cost?"≈ $"+x.cost:"Free";
+const placeTxt=x=>x.added.length?x.added.map((a,i)=>`${x.added.length>1?(i+1)+". ":""}${a.name}: ${where(a.x,a.y)}${a.ax!=null?"; aim it at "+where(a.ax,a.ay):""}`).join("<br>"):x.desc;
+const effect=(x,cur)=>`Right level: ${cur.ok}% → ${x.st.ok}% (${x.gain>=0?"+":""}${x.gain} pts)`+(x.fix.length?`<br>Fixes: ${x.fix.join(", ")}`:"")+(x.warn.length?`<br>Watch out: may make the ${x.warn.join(", ").toLowerCase()} ${S.goal==="more"?"too bright":"too dark"}`:"");
+function setGoalQuiet(g){if(g&&g!==S.goal){S.goal=g;$('gMore').className=g==='more'?'on':'';$('gLess').className=g==='less'?'on':'';S.all=false;refresh()}}
+function answerItem(P){const it=ITEMS.find(i=>i.k===P.item),cur=stats(full());
+ const pool=S.opts.filter(x=>it.opt.test(x.name));
+ if(!pool.length){const why=it.k==="mirror"?" It needs a window to bounce light from, so add a window to the map first.":" There's no free spot for it with your current furniture, doors and windows, or it doesn't apply to this room.";
+  return `I couldn't fit ${it.label} into this room.${why}<br><br>`+answerGoal({...P,intent:"goal"},true)}
+ const x=pool.slice().sort((a,b)=>b.st.ok-a.st.ok||a.cost-b.cost)[0],k=S.opts.indexOf(x);S.pv=-1;pick(k);
+ let h=`<b>${x.name}: ${money(x)}</b> <small>· typical ${x.range}</small><br><br><span class="k">Where</span><br>${placeTxt(x)}<br><br><span class="k">Effect</span><br>${effect(x,cur)}`;
+ if(x.tip)h+=`<br><br><span class="k">Tip</span>${x.tip}`;
+ if(P.budget!=null&&x.cost>P.budget)h+=`<br><br>That is over your $${P.budget} budget.`;
+ const best=S.opts.filter(o=>o.gain>0&&(P.budget==null||o.cost<=P.budget)).sort((a,b)=>b.st.ok-a.st.ok||a.cost-b.cost)[0];
+ if(x.gain<=0)h+=`<br><br>On its own this doesn't improve the room${best?`. For comparison, <b>${best.name}</b> (${money(best)}) gets the room to ${best.st.ok}%`:""}.`;
+ else if(best&&best!==x&&best.st.ok-x.st.ok>=5)h+=`<br><br>For comparison, <b>${best.name}</b> (${money(best)}) does more for this room: ${best.st.ok}% at the right level.`;
+ return h+`<br><br>It's shown on the map. Press Apply on its card to keep it.`}
+function answerGoal(P,quiet){const cur=stats(full()),bud=P.budget??1e9;
+ let l=S.opts.filter(x=>x.cost<=bud&&x.gain>0);const sc=x=>(x.fix.some(z=>P.zones.some(w=>z.toLowerCase().includes(w.toLowerCase())))?20:0)+x.gain-x.warn.length*10-x.cost/25;l.sort((a,b)=>sc(b)-sc(a));l=l.slice(0,3);
+ if(!l.length)return 'Nothing in the current list fits'+(P.budget!=null?' under $'+P.budget:'')+'. Try a higher budget, or add furniture and lights in step 1.';
+ S.pv=-1;pick(S.opts.indexOf(l[0]));
+ return (quiet?'Here are the best alternatives':'Best matches')+(P.budget!=null?` within $${P.budget}`:'')+':<br><br>'+l.map((x,i)=>`<b>${i+1}. ${x.name}</b>: ${money(x)} <small>· typical ${x.range}</small><br>${placeTxt(x)}<br>${effect(x,cur)}`).join('<br><br>')+`<br><br>Each idea is measured on its own, so the first one may be enough. Option 1 is shown on the map. Press Apply on its card to keep it.`}
+function local(q){const P=parseIntent(q);setGoalQuiet(P.goal);return P.intent==="item"?answerItem(P):answerGoal(P)}
 let busy=false;
 async function ask(q){q=q.trim();if(!q||busy)return;const sample=await window.claude?.use('sample');const a=$('ans');a.hidden=false;if(!sample){a.innerHTML=local(q);return}
  busy=true;$('askb').disabled=true;a.innerHTML='<i>Thinking…</i>';
+ const P=parseIntent(q);setGoalQuiet(P.goal);if(P.item){const it=ITEMS.find(i=>i.k===P.item);P.matchedOptionIds=S.opts.map((x,i)=>it.opt.test(x.name)?i:-1).filter(i=>i>=0)}
  const hist=S.chat.slice(-3).map(c=>'User: '+c.q+' / Advisor: '+c.a.slice(0,400)).join(' || ');
  const prompt=`${RULES}
 
@@ -391,12 +440,15 @@ ${state()}
 RECENT CONVERSATION:
 ${hist||'(none)'}
 
+PARSED REQUEST:
+${JSON.stringify(P)}
+
 USER REQUEST:
 ${q}`;
  try{const r=await sample(prompt,{tools:TL,modelTier:'default',cache:false,onText:({text})=>{a.innerHTML=fmt(text)}});a.innerHTML=fmt(r.text);S.chat.push({q,a:r.text});$('q').value=''}
  catch(e){a.innerHTML=e.code==='not_granted'?local(q)+'<br><small>(Built-in matcher used because AI permission was declined.)</small>':e.code==='rate_limited'?'Too many requests right now. Please wait a moment and try again.':'Something went wrong. Please try again.'}
  busy=false;$('askb').disabled=false}
-$('chips').innerHTML=['Cosy reading corner under $50','My desk feels too dim','Cut glare while watching TV','Cheapest way to brighten the room','My own: 2,000 lumen bulb in the ceiling light'].map(t=>`<button class='chipb'>${t}</button>`).join('');
+$('chips').innerHTML=['Where should I add pot lights and how much would it cost?','Cosy reading corner under $50','My desk feels too dim','Cut glare while watching TV','Cheapest way to brighten the room','My own: 2,000 lumen bulb in the ceiling light'].map(t=>`<button class='chipb'>${t}</button>`).join('');
 $('chips').onclick=e=>{if(e.target.tagName==='BUTTON'){$('q').value=e.target.textContent;ask(e.target.textContent)}};
 $('askb').onclick=()=>ask($('q').value);
 $('q').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask($('q').value)}};

@@ -18,6 +18,8 @@ Upload a photo of your room (or draw it instead), mark your furniture, and the t
 - **Functional checks.** Each idea lists the zones it brings to the right level and warns if it may over-light another (for example, the bed).
 - **Filters and sorting.** Filter by budget (free to $100) and sort by best result, lowest price or best value.
 - **Undo and reset.** Preview any option, then apply it or cancel.
+- **Lighting advisor.** Ask in plain English. Ask about one thing ("Where should I add pot lights and how much would it cost?") and you get that item's placement, price and effect, previewed on the map. Describe a goal ("my desk feels too dim, under $50") and you get a short ranked list.
+- **Evaluation suite.** A test set of advisor questions with expected results, run automatically on every push.
 
 ---
 
@@ -117,6 +119,48 @@ Prices are rough US retail estimates in USD and vary by brand and store.
   - Spotlights mount at a wall and aim at task areas, never at the bed or TV.
 - In photo mode, the starting brightness of each cell is estimated from the photo's pixel luminance; lights you add are modelled on top of it.
 
+### The advisor
+
+The advisor is split into two steps so that prices and placements always come from the simulation, never from guesswork:
+
+1. **Understand the request.** `parseIntent()` turns free text into a structured request, for example:
+
+   ```json
+   { "intent": "item", "item": "recessed", "goal": "more", "budget": null, "zones": [], "asksCost": true, "asksWhere": true }
+   ```
+
+   It recognises specific items (pot lights, floor lamps, track lighting, dimmers, blinds and so on), budgets tied to money ("under $60", "120 dollars", but not "2,000 lumens"), whether the user wants more or less light, and which furniture they mention.
+2. **Answer from the simulated options.**
+   - `intent: "item"`: the advisor answers about that one option: where each light goes, its price, and how it changes the room. It adds a single comparison only when another option is clearly better, and says so when the item is over budget or can't fit.
+   - `intent: "goal"`: it ranks up to three options by improvement, budget and the furniture mentioned.
+
+When the page runs inside Claude (as an artifact with AI access), the same structured request is passed to the model alongside the room data, and the model uses tools (`preview_option`, `add_furniture`, `add_custom_idea` and others) to act on the map. Elsewhere, such as on GitHub Pages, the built-in advisor answers on its own.
+
+---
+
+## Evaluations
+
+`tests/advisor-evals.json` holds test questions with expected results at two levels:
+
+- **Parse cases** check that a question becomes the right structured request (item, goal, budget, furniture).
+- **Answer cases** run the full advisor on the default drawn room, then check what is previewed on the map, required and forbidden text, how many options are listed, word count and that listed options respect the budget.
+
+Run them locally:
+
+```bash
+npm install
+```
+
+```bash
+npx playwright install chromium
+```
+
+```bash
+npm run eval
+```
+
+Add `-- --verbose` to see every answer. The suite also runs in GitHub Actions on every push and pull request (`.github/workflows/evals.yml`). Before this advisor was rebuilt, the old keyword matcher passed 1 of 26 cases; the current version passes all of them.
+
 ---
 
 ## Customising
@@ -130,6 +174,7 @@ All values live in the script at the bottom of the file:
 | Light types, heights and default lumens | The `T` table |
 | Comfortable range (70% to 160%) | The `stats()` and `bestLight()` functions |
 | Door and window clearances | The `clear()` function |
+| Advisor vocabulary (items, budget and goal phrases) | The `ITEMS`, `LESS` and `MORE` tables above `parseIntent()` |
 
 ---
 

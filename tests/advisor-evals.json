@@ -1,0 +1,41 @@
+{
+  "_about": "Evaluation cases for the built-in lighting advisor. 'parse' cases check parseIntent() only. 'answer' cases run the full advisor on the default drawn room and check the reply and the map preview.",
+  "parse": [
+    { "q": "Where should I add pot lights and how much would it cost?", "expect": { "intent": "item", "item": "recessed", "goal": "more", "budget": null, "asksCost": true, "asksWhere": true } },
+    { "q": "Can I put potlights in?", "expect": { "intent": "item", "item": "recessed" } },
+    { "q": "how much for recessed lighting over the desk", "expect": { "intent": "item", "item": "recessed", "zones": ["Desk"] } },
+    { "q": "I want a floor lamp next to my reading chair under $60", "expect": { "intent": "item", "item": "floor", "budget": 60, "zones": ["Reading chair"] } },
+    { "q": "Would track lighting work here?", "expect": { "intent": "item", "item": "track" } },
+    { "q": "Add LED strip lights behind the TV", "expect": { "intent": "item", "item": "strip", "zones": ["TV"] } },
+    { "q": "Should I get a dimmer switch?", "expect": { "intent": "item", "item": "dimmer", "goal": "less" } },
+    { "q": "Blackout blinds for the bedroom window", "expect": { "intent": "item", "item": "blackout", "goal": "less" } },
+    { "q": "Cosy reading corner under $50", "expect": { "intent": "goal", "item": null, "budget": 50, "zones": ["Reading chair"] } },
+    { "q": "My desk feels too dim", "expect": { "intent": "goal", "goal": "more", "zones": ["Desk"] } },
+    { "q": "The room is too dark", "expect": { "intent": "goal", "goal": "more" } },
+    { "q": "Cut glare while watching TV", "expect": { "intent": "goal", "goal": "less", "zones": ["TV"] } },
+    { "q": "It's way too bright in here", "expect": { "goal": "less" } },
+    { "q": "Cheapest way to brighten the room", "expect": { "intent": "goal", "goal": "more", "asksCost": true } },
+    { "q": "My own: 2,000 lumen bulb in the ceiling light", "expect": { "item": "bulb", "budget": null } },
+    { "q": "brighten the desk, budget is 120 dollars", "expect": { "goal": "more", "budget": 120 } },
+    { "q": "I have $35 to spend on more light", "expect": { "goal": "more", "budget": 35 } },
+    { "q": "smart bulbs for the bedroom", "expect": { "item": "smartbulb" } }
+  ],
+  "answer": [
+    { "q": "Where should I add pot lights and how much would it cost?",
+      "expect": { "preview": "2 recessed \\(pot\\) lights", "goal": "more", "include": ["\\$90", "Recessed light 1", "Recessed light 2", "Where", "Apply"], "exclude": ["Best matches"], "maxListed": 0, "maxWords": 130 } },
+    { "q": "How much would a floor lamp cost?",
+      "expect": { "preview": "^Floor lamp$", "include": ["\\$45", "Floor lamp:"], "exclude": ["Best matches"], "maxListed": 0 } },
+    { "q": "I want track lighting under $40",
+      "expect": { "preview": "^Track lighting", "include": ["over your \\$40 budget"] } },
+    { "q": "Where would a mirror go?",
+      "expect": { "preview": "^Mirror opposite the window$", "include": ["Large mirror"] } },
+    { "q": "Should I get a dimmer switch?",
+      "expect": { "goal": "less", "preview": "^Dimmer switch", "include": ["Dimmer switch"] } },
+    { "q": "My desk feels too dim",
+      "expect": { "goal": "more", "include": ["Best matches"], "maxListed": 3 } },
+    { "q": "Cosy reading corner under $50",
+      "expect": { "include": ["within \\$50"], "maxListed": 3, "maxCost": 50 } },
+    { "q": "Cut glare while watching TV",
+      "expect": { "goal": "less", "maxListed": 3 } }
+  ]
+}

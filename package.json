@@ -1,0 +1,11 @@
+{
+  "name": "room-light-heat-map",
+  "private": true,
+  "description": "Room lighting heat map with a built-in advisor and an evaluation suite.",
+  "scripts": {
+    "eval": "node tests/run-evals.cjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}

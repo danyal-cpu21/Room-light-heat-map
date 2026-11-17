@@ -56,6 +56,13 @@ label{color:var(--mut);font-size:13px}
 .banner{background:var(--ac-soft);color:var(--tx);border:1px solid var(--ac);border-radius:8px;padding:8px 12px;margin:12px 0 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;font-size:13px}
 .banner button{min-height:30px;padding:4px 10px}
 .banner button:first-child{background:var(--ac);color:var(--on);border-color:var(--ac)}
+.drop{border:1.5px dashed var(--bd2);border-radius:10px;background:var(--soft);padding:40px 20px;text-align:center;margin-top:12px;transition:border-color .12s,background .12s}
+.drop.over{border-color:var(--ac);background:var(--ac-soft)}
+.drop h3{font-size:16px;font-weight:600;margin:0 0 4px}.drop p{color:var(--mut);margin:0 auto 16px;max-width:420px;font-size:13px}
+.drop .row{justify-content:center}
+.linkb{background:none;border:0;color:var(--ac);padding:0;min-height:0;font-weight:500;text-decoration:underline;text-underline-offset:2px}
+.linkb:hover{background:none}
+.modebar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;margin-bottom:4px}
 .note{background:var(--soft);border-left:3px solid var(--ac);border-radius:4px;padding:8px 12px;font-size:13px;margin:8px 0;color:var(--mut)}
 small{color:var(--mut);font-size:12px}
 .foot{display:block;margin-top:12px}
@@ -73,13 +80,16 @@ textarea{width:100%;font:inherit;font-size:13px;color:var(--tx);background:var(-
 </head><body><div class="wrap">
 <header class="hd"><div>
  <h1>Room Light Heat Map</h1>
- <p class="sub">Mark your furniture, see which spots are too dark or too bright for how you use them, then get priced ideas with the exact spot for each light.</p>
+ <p class="sub">Upload a photo of your room, mark your furniture, see which spots are too dark or too bright for how you use them, then get priced ideas with the exact spot for each light.</p>
 </div></header>
 <div class="grid"><div>
  <div class="card">
   <h2><span class="n">1</span>Set up your room</h2>
-  <div class="row"><label>Room size</label><input id="W" type="number" min="6" max="30" value="14"><label>×</label><input id="L" type="number" min="6" max="30" value="12"><label>ft (top of the map = top wall)</label></div>
-  <div class="row"><button id="up">Use a photo instead</button><input id="file" type="file" accept="image/*" hidden><button id="clr" hidden>Back to drawing</button></div>
+  <div class="modebar"><div class="seg"><button id="mPhoto" class="on">Upload a photo</button><button id="mDraw">Draw it instead</button></div><button id="up" hidden>Replace photo</button></div>
+  <input id="file" type="file" accept="image/*" hidden>
+  <div class="drop" id="drop"><h3>Upload a photo of your room</h3><p>A top-down or wide shot works best. The map reads brightness from the photo, then you mark your lights and furniture on top of it.</p><div class="row"><button id="pick" class="on">Choose a photo</button></div><p style="margin:12px auto 0">or drag an image here, or <button class="linkb" id="toDraw">draw your room instead</button></p></div>
+  <div id="room">
+  <div class="row"><label>Room size</label><input id="W" type="number" min="6" max="30" value="14"><label>×</label><input id="L" type="number" min="6" max="30" value="12"><label id="lnote">ft (top of the map = top wall)</label></div>
   <div class="note" id="pnote" hidden>Photo mode lays a flat top-down map over a perspective photo, so pins can look like they sit on furniture. Use the furniture buttons to mark your bed, desk and so on <b>where they appear in the photo</b>. Lights will then keep off them. Treat spots as approximate.</div>
   <div class="sec">Lights and openings</div><div class="row" id="tools"></div>
   <div class="sec">Furniture <span style="text-transform:none;letter-spacing:0;font-weight:400">· lights stay off it, and each piece gets its own light level</span></div><div class="row" id="ftools"></div>
@@ -94,6 +104,7 @@ textarea{width:100%;font:inherit;font-size:13px;color:var(--tx);background:var(-
    <div class="row"><button id="del">Delete selected</button></div>
   </div>
   <small class="foot">Colours compare each spot to what it needs: a desk wants far more light than a bed. Dashed circle by a door = keep clear.</small>
+  </div>
  </div></div>
  <div>
   <div class="card">
@@ -101,7 +112,7 @@ textarea{width:100%;font:inherit;font-size:13px;color:var(--tx);background:var(-
    <div class="row"><div class="seg"><button id="gMore" class="on">More light</button><button id="gLess">Less light</button></div></div>
    <div class="row"><label>Open floor use</label><select id="tgt"><option value="80">Relaxed (TV, evenings)</option><option value="150" selected>Everyday living</option><option value="300">Reading and hobbies</option><option value="500">Kitchen, office, detail work</option></select></div>
    <div class="row"><button id="undo">Undo</button><button id="reset">Reset room</button></div></div>
-  <div class='card' id='adv'><h2>Ask the lighting advisor</h2>
+  <div class='card needroom' id='adv'><h2>Ask the lighting advisor</h2>
    <div class='d'>Tell it what you want in your own words: a mood, a budget, a problem to fix, or something to add (for example “put a reading chair in the top-right corner”). It updates the room and answers from your priced options.</div>
    <div class='row' id='chips'></div>
    <textarea id='q' rows='2' placeholder='e.g. I want a cosy reading nook by the window, under $60'></textarea>
@@ -109,7 +120,7 @@ textarea{width:100%;font:inherit;font-size:13px;color:var(--tx);background:var(-
    <div id='ans' class='where' hidden></div>
    <small>Answers are generated by Claude from your room data and the options in step 3. Prices are estimates.</small>
   </div>
-  <div class="card" id="mine">
+  <div class="card needroom" id="mine">
    <h2>Add your own idea</h2>
    <div class="d">Have a specific lamp, bulb or spot in mind? Enter it here with your own brightness and price. It becomes its own option below, measured on its own.</div>
    <div class="row"><label>Name</label><input id="mn" type="text" placeholder="e.g. Brass arc lamp from IKEA" style="flex:1;min-width:160px"></div>
@@ -139,7 +150,7 @@ const TOOLS=["ceiling","lamp","spot","window","door"];
 const FT={bed:{w:5,d:6.7,n:"Bed",tg:60,noaim:1},sofa:{w:7,d:3,n:"Sofa",tg:150},chair:{w:3,d:3,n:"Reading chair",tg:300},desk:{w:4.5,d:2.2,n:"Desk",tg:450,surface:1},table:{w:4,d:3,n:"Table",tg:200,surface:1},stand:{w:1.5,d:1.5,n:"Side table or nightstand",tg:150,surface:1},tv:{w:4,d:1,n:"TV or screen",tg:60,noaim:1}};
 const def=()=>[{type:"ceiling",x:7,y:6,lm:800,h:8},{type:"window",x:7,y:.3,lm:1800,h:4},{type:"door",x:2.5,y:11.7,lm:0,h:0}];
 const deff=()=>[{k:"bed",x:10.5,y:4.5,w:5,d:6.7},{k:"stand",x:7,y:2,w:1.5,d:1.5},{k:"desk",x:3.5,y:1.4,w:4.5,d:2.2},{k:"chair",x:2,y:8,w:3,d:3}];
-const S={W:14,L:12,lights:def(),furn:deff(),goal:"more",target:150,tool:"ceiling",sel:-1,fs:-1,img:null,adj:null,hist:[],saved:null,sf:null,pk:null,tk:null,pv:-1,opts:[],bud:1e9,sort:"best",all:false};
+const S={mode:"photo",photo:null,W:14,L:12,lights:def(),furn:deff(),goal:"more",target:150,tool:"ceiling",sel:-1,fs:-1,img:null,adj:null,hist:[],saved:null,sf:null,pk:null,tk:null,pv:-1,opts:[],bud:1e9,sort:"best",all:false};
 const cv=$("cv"),ctx=cv.getContext("2d");
 const dims=()=>[Math.ceil(S.W/RES),Math.ceil(S.L/RES)];
 const DR=()=>S.lights.filter(l=>l.type==="door"),WN=()=>S.lights.filter(l=>l.type==="window");
@@ -242,7 +253,8 @@ function draw(){const [c,r]=dims(),ov=S.pv>=0?S.opts[S.pv]:null,ls=ov?ov.lights:
  const b=$("banner");b.hidden=!ov;if(ov)b.innerHTML=`<span>Previewing <b>${ov.name}</b> (${ov.cost?"≈ $"+ov.cost:"free"}). Numbered pins show where each light goes.</span><span><button onclick="applyOpt(S.pv)">Apply</button> <button onclick="pick(-1)">Cancel</button></span>`;
  const l=S.lights[S.sel],f=S.furn[S.fs];$("selp").hidden=!!ov||!(l||f);$("lrow").hidden=!(l&&l.type!=="door");$("frow").hidden=!f;if(l&&l.type!=="door"){$("lm").value=l.lm;$("lmv").textContent=Math.round(l.lm)+" lm"}if(f){$("fw").value=f.w;$("fd").value=f.d}}
 const tier=x=>x.cost===0?"Free":x.cost<30?"Budget":x.cost<=75?"Mid-range":"Premium";
-function renderOpts(){const cur=stats(full()),rg=regions(full());let msg=`<b>${cur.ok}%</b> of your room has the right light for how each spot is used. Dimmest area: <b>${rg.dim}</b>. Brightest area: <b>${rg.bri}</b>.`;
+function renderOpts(){if(S.mode==="photo"&&!S.img){$("sum").innerHTML="Upload a photo of your room in step 1, or draw it instead, to see priced ideas.";$("opts").innerHTML="";return}
+const cur=stats(full()),rg=regions(full());let msg=`<b>${cur.ok}%</b> of your room has the right light for how each spot is used. Dimmest area: <b>${rg.dim}</b>. Brightest area: <b>${rg.bri}</b>.`;
  if(S.goal==="more"&&cur.dark<8)msg+=" Your room is already well lit. Try “Less light” if it feels harsh, or a higher open-floor use above.";if(S.goal==="less"&&cur.bright<8)msg+=" There aren’t many glaring spots. These ideas will just soften things.";if(S.plan.length)msg+=`<br><b>Your plan so far:</b> ${S.plan.map(p=>p.name).join(", ")}. Total <b>≈ $${S.plan.reduce((s,p)=>s+p.cost,0)}</b>.`;$("sum").innerHTML=msg;
  let list=S.opts.filter(x=>x.mine||(x.cost<=S.bud&&(S.cat==="all"||cat(x)===S.cat)));const useful=list.filter(x=>x.gain>0||x.mine);if(useful.length)list=useful;
  list.sort(S.sort==="price"?(a,b)=>a.cost-b.cost||b.st.ok-a.st.ok:S.sort==="value"?(a,b)=>b.gain/(b.cost+5)-a.gain/(a.cost+5):(a,b)=>b.st.ok-a.st.ok||a.cost-b.cost);
@@ -291,9 +303,17 @@ $("tgt").onchange=e=>{S.target=+e.target.value;refresh()};
 $("bud").onchange=e=>{S.bud=+e.target.value;renderOpts()};$("sort").onchange=e=>{S.sort=e.target.value;renderOpts()};$("cat").onchange=e=>{S.cat=e.target.value;S.all=false;renderOpts()};
 function size(){S.W=Math.max(6,Math.min(30,+$("W").value||14));if(!S.img)S.L=Math.max(6,Math.min(30,+$("L").value||12));$("L").value=S.L;S.adj=null;S.pk=null;S.lights.forEach(l=>{l.x=Math.min(l.x,S.W-.2);l.y=Math.min(l.y,S.L-.2)});S.furn.forEach(f=>{f.x=Math.min(f.x,S.W-f.w/2);f.y=Math.min(f.y,S.L-f.d/2)});refresh()}
 $("W").onchange=size;$("L").onchange=size;
-$("up").onclick=()=>$("file").click();
-$("file").onchange=e=>{const f=e.target.files[0];if(!f)return;const fr=new FileReader();fr.onerror=()=>alert("Couldn’t read that image.");fr.onload=()=>{const im=new Image();im.onerror=()=>alert("Couldn’t open that image. Try a JPG or PNG.");im.onload=()=>{if(!S.img){S.saved=S.lights;S.sf=S.furn}S.lights=[];S.furn=[];S.img=im;S.L=+(S.W*im.height/im.width).toFixed(1);$("L").value=S.L;$("L").disabled=true;$("clr").hidden=false;$("pnote").hidden=false;S.adj=null;S.pk=null;S.sel=-1;S.fs=-1;S.hist=[];refresh()};im.src=fr.result};fr.readAsDataURL(f);e.target.value=""};
-$("clr").onclick=()=>{S.img=null;S.lights=S.saved||def();S.furn=S.sf||deff();S.L=12;$("L").value=12;$("L").disabled=false;$("clr").hidden=true;$("pnote").hidden=true;S.adj=null;S.pk=null;refresh()};
+$("up").onclick=$("pick").onclick=()=>$("file").click();
+function load(f){if(!f||!/^image\//.test(f.type))return;const fr=new FileReader();fr.onerror=()=>alert("Couldn’t read that image.");fr.onload=()=>{const im=new Image();im.onerror=()=>alert("Couldn’t open that image. Try a JPG or PNG.");im.onload=()=>{S.photo=im;setMode("photo",true)};im.src=fr.result};fr.readAsDataURL(f)}
+function setMode(m,fresh){if(m===S.mode&&!fresh)return;if(S.mode==="draw"&&!S.img){S.saved=S.lights;S.sf=S.furn}else if(S.img&&!fresh){S.pl=S.lights;S.pf=S.furn}
+ S.mode=m;S.adj=null;S.pk=null;S.sel=-1;S.fs=-1;S.hist=[];S.pv=-1;S.pend=null;$("cpl").hidden=true;
+ if(m==="photo"&&S.photo){const im=S.photo;S.img=im;S.lights=fresh?[]:S.pl||[];S.furn=fresh?[]:S.pf||[];S.L=+(S.W*im.height/im.width).toFixed(1);$("L").value=S.L;$("L").disabled=true}
+ else{S.img=null;if(m==="draw"){S.lights=S.saved||def();S.furn=S.sf||deff()}S.L=+$("L").value&&!$("L").disabled?S.L:12;$("L").value=S.L;$("L").disabled=false}
+ view();refresh()}
+function view(){const empty=S.mode==="photo"&&!S.img;$("mPhoto").className=S.mode==="photo"?"on":"";$("mDraw").className=S.mode==="draw"?"on":"";$("drop").hidden=!empty;$("room").hidden=empty;$("up").hidden=!S.img;$("pnote").hidden=!S.img;$("lnote").textContent=S.img?"ft (length follows the photo)":"ft (top of the map = top wall)";document.querySelectorAll(".needroom").forEach(e=>e.hidden=empty)}
+$("mPhoto").onclick=()=>setMode("photo");$("mDraw").onclick=$("toDraw").onclick=()=>setMode("draw");
+const dz=$("drop");dz.ondragover=e=>{e.preventDefault();dz.classList.add("over")};dz.ondragleave=()=>dz.classList.remove("over");dz.ondrop=e=>{e.preventDefault();dz.classList.remove("over");load(e.dataTransfer.files[0])};
+$("file").onchange=e=>{load(e.target.files[0]);e.target.value=""};
 /* ---- custom ideas ---- */
 const IK={floor:{n:"Floor lamp",type:"lamp",h:5,lm:1100,cost:45},table:{n:"Table lamp",type:"lamp",h:3.5,lm:450,cost:25},spot:{n:"Spotlight",type:"spot",h:8,lm:700,cost:30},ceiling:{n:"Ceiling light",type:"ceiling",h:8,lm:800,cost:40},sconce:{n:"Wall sconce",type:"lamp",h:5.5,lm:550,cost:38},bulb:{n:"Bulb swap",type:"lamp",h:5,lm:1300,cost:7}};
 S.mine=[];S.plan=[];S.pend=null;S.cat="all";let IDN=0;
@@ -381,5 +401,5 @@ $('chips').onclick=e=>{if(e.target.tagName==='BUTTON'){$('q').value=e.target.tex
 $('askb').onclick=()=>ask($('q').value);
 $('q').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask($('q').value)}};
 (async()=>{try{if(await window.claude?.use('sample'))$('adv').hidden=false}catch(e){}})();
-tools();refresh();
+tools();view();refresh();
 </script></body></html>

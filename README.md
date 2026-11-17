@@ -1,16 +1,16 @@
-# Room-light-heat-map
+# Room Light Heat Map
 
 An interactive, single-file web tool that visualises how well a room is lit, then recommends priced fixes to add or remove light, with the exact spot for each one.
 
-Describe your room (or upload a photo), mark your furniture, and the tool shows a heat map of bright and dim areas measured against what each spot actually needs. A desk needs far more light than a bed, so the map judges each area on its own terms.
+Upload a photo of your room (or draw it instead), mark your furniture, and the tool shows a heat map of bright and dim areas measured against what each spot actually needs. A desk needs far more light than a bed, so the map judges each area on its own terms.
 
 ---
 
 ## Features
 
 - **Lighting heat map.** Colour-coded view of too-dark, right-level and too-bright areas, with live percentages.
-- **Draw your room.** Set room dimensions, then place ceiling lights, lamps, spotlights, windows and doors. Drag to move, double-click to remove.
-- **Photo mode.** Upload a photo to estimate brightness from pixels and overlay the same heat map.
+- **Start from a photo.** Upload or drag in a photo of your room. The tool estimates brightness from the pixels and overlays the heat map on the picture. Then mark your lights and furniture where they appear in the photo.
+- **Or draw your room.** Prefer precise placement? Switch to *Draw it instead*, set room dimensions, then place ceiling lights, lamps, spotlights, windows and doors. Drag to move, double-click to remove. Your photo and your drawn room are kept separately, so you can switch between them.
 - **Furniture-aware.** Place a bed, sofa, reading chair, desk, table, side table or TV. Each has its own target light level, and recommended lights are kept off furniture.
 - **Two goals.** Choose *More light* or *Less light*, and set how you use the open floor (relaxed, everyday, reading, detail work).
 - **Priced recommendations.** Around 15 options when adding light and about 10 when reducing it, each with an estimated cost, typical price range and a before/after score.
@@ -25,7 +25,7 @@ Describe your room (or upload a photo), mark your furniture, and the tool shows 
 
 The project is one self-contained HTML file with no build step and no dependencies.
 
-1. Download `light-heatmap-v3.html`.
+1. Download `index.html`.
 2. Open it in any modern browser.
 
 To host it, upload the file to any static host (GitHub Pages, Netlify, an S3 bucket and so on).
@@ -34,7 +34,9 @@ To host it, upload the file to any static host (GitHub Pages, Netlify, an S3 buc
 
 ## How to use
 
-1. **Set up your room.** Enter the width and length in feet. Add lights, windows and doors, then your furniture. Alternatively, upload a photo and mark furniture where it appears in the picture.
+1. **Add your room.**
+   - **Upload a photo (default).** Select **Choose a photo** or drag an image onto the upload area. Enter the room width in feet; the length follows the photo's proportions. Mark your lights, windows, doors and furniture where they appear in the picture. Use **Replace photo** to swap it.
+   - **Draw it instead.** Select **Draw it instead**, enter the width and length in feet, then add lights, windows and doors, followed by your furniture.
 2. **Choose a goal.** Pick *More light* or *Less light* and the level you want for open floor space.
 3. **Review ideas.** Read the summary of your dimmest and brightest areas, filter by budget, and select **Show on map** to preview an option. Select **Apply** to keep it.
 
@@ -113,7 +115,7 @@ Prices are rough US retail estimates in USD and vary by brand and store.
   - Doors keep a 3.6 ft clear zone, and floor-standing lights stay about 2 ft from windows.
   - Floor lamps go in corners or beside seating, sconces on walls, and table lamps on existing surfaces.
   - Spotlights mount at a wall and aim at task areas, never at the bed or TV.
-- In photo mode, brightness is estimated from pixel luminance.
+- In photo mode, the starting brightness of each cell is estimated from the photo's pixel luminance; lights you add are modelled on top of it.
 
 ---
 
@@ -134,7 +136,7 @@ All values live in the script at the bottom of the file:
 ## Limitations
 
 - This is a simplified planning model, **not a light-meter reading**. Real results depend on shades, wall colour, bulb beam angle and furniture shadows.
-- Photo mode overlays a flat map on a perspective photo, so positions are approximate. Mark furniture where it appears in the photo, or use drawn mode for precise placement.
+- Photo mode overlays a flat map on a perspective photo, so positions are approximate. Mark furniture where it appears in the photo, or switch to *Draw it instead* for precise placement.
 - Prices are estimates only. Electrical work may require a licensed professional.
 - Rooms are rectangular and measured in feet.
 
@@ -142,7 +144,7 @@ All values live in the script at the bottom of the file:
 
 ## Tech
 
-- Plain HTML, CSS and JavaScript (no frameworks, no external requests)
+- Plain HTML, CSS and JavaScript (no frameworks or build step; the only external request is the Inter web font from Google Fonts, with a system-font fallback)
 - HTML5 Canvas for rendering
 - Supports light and dark mode, and works on desktop and mobile
 

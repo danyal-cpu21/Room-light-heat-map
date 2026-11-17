@@ -160,6 +160,4 @@ All values live in the script at the bottom of the file:
 
 ---
 
-## License
 
-Add the licence of your choice (for example, MIT) before distributing.
